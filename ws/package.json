@@ -5,8 +5,12 @@
   "main": "index.js",
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "start": "nodemon -L index.js"
+  },
   "dependencies": {
     "jsonwebtoken": "^8.5.1",
+    "nodemon": "^2.0.20",
     "ws": "^8.10.0"
   }
 }

@@ -5,10 +5,13 @@ import fs from 'fs';
 
 const cert = fs.readFileSync('./kishanrajdev.cer');
 const server = createServer();
+
 const wss = new WebSocketServer({ noServer: true });
 
 function authenticate(req, cb) {
+    console.log('authenticate');
     const queryParams = getParams(req);
+    return cb(null, req.client);
     try {
       const payload = jwt.verify(queryParams.token, cert);
       if (payload.exp * 1000 < Date.now()) {
@@ -39,10 +42,6 @@ wss.on('connection', function connection(ws, request, client) {
     console.log(`Received message ${data} from user ${client}`);
   });
 });
-
-// wss.on('close', function close() {
-//   console.log('disconnected');
-// });
 
 server.on('upgrade', function upgrade(request, socket, head) {
   // This function is not defined on purpose. Implement it with your own logic.
