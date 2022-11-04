@@ -1,26 +1,49 @@
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
-import jwt from 'jsonwebtoken';
-import fs from 'fs';
+import WebSocket, { WebSocketServer } from 'ws';
+import { createClient } from 'redis';
 
-const cert = fs.readFileSync('./kishanrajdev.cer');
-const server = createServer();
+const connectionMap = new Map();
+
+const redisClient = createClient({url: `redis://redis:6379`});
+
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
+
+await redisClient.connect();
+
+redisClient.subscribe('channel', (message) => {
+  // send the notification message to connected client
+  // message format '{"email":"name@email.com", "message":"new notification"}'
+  try {
+    const msg = JSON.parse(message);
+    if (connectionMap.has(msg.email)) {
+      const clientConnection = connectionMap.get(msg.email);
+      if (clientConnection.readyState === WebSocket.OPEN) { // send message if the client connection is open
+        clientConnection.send('You have a notification - ' + msg.message);
+      }
+    }
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+const server = createServer((req, res)=> {
+  res.setHeader('Set-Cookie', ['foo=bar']);
+  res.end(JSON.stringify({ host: process.env.HOSTNAME}));
+});
 
 const wss = new WebSocketServer({ noServer: true });
 
 function authenticate(req, cb) {
-    console.log('authenticate');
-    const queryParams = getParams(req);
     return cb(null, req.client);
-    try {
-      const payload = jwt.verify(queryParams.token, cert);
-      if (payload.exp * 1000 < Date.now()) {
-        throw new Error('token expired');
-      }
-      return cb(null, req.client);
-    } catch(e) {
-      cb(e);
-    }
+    // try {
+    //   const payload = jwt.verify(queryParams.token, cert);
+    //   if (payload.exp * 1000 < Date.now()) {
+    //     throw new Error('token expired');
+    //   }
+    //   return cb(null, req.client);
+    // } catch(e) {
+    //   cb(e);
+    // }
 }
 
 const getParams = function (req) {
@@ -38,6 +61,14 @@ const getParams = function (req) {
 }
 
 wss.on('connection', function connection(ws, request, client) {
+  const queryParams = getParams(request);
+  if (queryParams.email) {
+    connectionMap.set(queryParams.email, ws);
+  }
+
+  ws.send('Connected to - ' + process.env.HOSTNAME);  // first message
+  ws.send(JSON.stringify(request.headers)); // for testing - sending request headers
+
   ws.on('message', function message(data) {
     console.log(`Received message ${data} from user ${client}`);
   });

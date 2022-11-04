@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   ws1:
-    container_name: websocket1
+    container_name: ws1
     build:
       context: ws
       dockerfile: Dockerfile
@@ -10,7 +10,7 @@ services:
     volumes:
       - ./ws:/usr/src/websocket
   ws2:
-    container_name: websocket2
+    container_name: ws2
     build:
       context: ws
       dockerfile: Dockerfile
@@ -19,9 +19,10 @@ services:
     volumes:
       - ./ws:/usr/src/websocket
   redis:
+    container_name: redis
     image: "redis:alpine"
     ports:
-      - "6379:6379"
+      - "6400:6379"
   nginx:
     container_name: loadbalancer
     build:
