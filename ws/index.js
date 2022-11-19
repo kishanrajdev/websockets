@@ -66,7 +66,7 @@ wss.on('connection', function connection(ws, request, client) {
     connectionMap.set(queryParams.email, ws);
   }
 
-  ws.send('Connected to - ' + process.env.HOSTNAME);  // first message
+  ws.send(queryParams.email + ' has connected to - ' + process.env.HOSTNAME);  // first message
   ws.send(JSON.stringify(request.headers)); // for testing - sending request headers
 
   ws.on('message', function message(data) {
